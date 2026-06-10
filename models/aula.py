@@ -1,3 +1,4 @@
+#obs talvez as paginas sejam mudadas ainda não sei onde ira ficar a api
 class Estoque:
     def __init__(self,nome,quantidade,preco):
         self.nome = nome

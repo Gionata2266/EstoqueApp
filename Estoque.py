@@ -1,5 +1,5 @@
 from flask import Flask, jsonify
-
+#obs talvez as paginas sejam mudadas ainda não sei onde ira ficar a api
 app = Flask(__name__)
 
 class Estoque:

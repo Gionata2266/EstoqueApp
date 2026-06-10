@@ -1,4 +1,4 @@
-py Estoque.py
+py API.py
 
 from flask import Flask, jsonify
 

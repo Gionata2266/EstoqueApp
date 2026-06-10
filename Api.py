@@ -16,12 +16,16 @@ estoque=[
 
 @app.route("/")
 def inicio():
-    return estoque
+    return "Hello World!"
+
+@app.route("/listar")
+def lista():
+    return jsonify(estoque)
 
 @app.route("/add")
 def adicionar():
     estoque.append({"nome":"calabresa", "quantidade":10,"preco":8})
-    return estoque
+    return jsonify(estoque)
 
 
 if __name__ == "__main__":

@@ -4,14 +4,14 @@ from flask import Flask, jsonify, request
 app = Flask(__name__)
 estoque=[
     {
-    "nome":"Mussarela",
+    "nome":"Pizza De Mussarela",
     "quantidade":10,
-    "preco":2000
+    "preco":80
     },
     {
-    "nome":"Molho de tomate",
+    "nome":"Pizza De Calabresa",
     "quantidade":10,
-    "preco":2000
+    "preco":80
     }
     ]
 
@@ -33,6 +33,29 @@ def adicionar():
     })
     return jsonify(estoque)
 
+@app.route("/delete", methods=["DELETE"])
+def deletar():
+    dados = request.get_json()
+    nome = dados["nome"]
+    for item in estoque:
+        if item["nome"] == nome:
+            estoque.remove(item)
+            return jsonify({"mensagem": f"{nome} removido!"})
+    return jsonify({"mensagem": "Ingrediente não encontrado"}), 404
+
+@app.route("/pedir", methods=["POST"])
+def pedir():
+    dados = request.get_json()
+    nome = dados["nome"]
+    quantidade_pedida = dados["quantidade"]  # ← pega a quantidade
+    for item in estoque:
+        if item["nome"] == nome:
+            if item["quantidade"] >= quantidade_pedida:
+                item["quantidade"] -= quantidade_pedida  # ← diminui a quantidade certa
+                return jsonify({"mensagem": f"Pedido de {nome} realizado!"})
+            else:
+                return jsonify({"mensagem": "Sem estoque suficiente!"}), 400
+    return jsonify({"mensagem": "Pizza não encontrada"}), 404
 
 if __name__ == "__main__":
     app.run(debug=True)

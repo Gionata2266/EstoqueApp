@@ -16,39 +16,56 @@ def cadastrar_pizza():
             "preco": float(entrada_preco.get())
         }
         requests.post(f"{API_URL}/add", json=dados)
-        messagebox.showinfo("Sucesso!", "Ingrediente cadastrado!")   
+        messagebox.showinfo("Sucesso!", "Ingrediente cadastrado!")
+        buscar_pizza()   
 
 def buscar_pizza():
     response = requests.get(f"{API_URL}/listar") #salva em igredientes
     ingredientes = response.json()
     
-    listar.delete("1.0", tk.END)  # limpa o Text quando clica em mostar os igrediente para não ficar aparecendo
-    for item in ingredientes:    #mostra os igrendientes que foram salvos todos
-        listar.insert(tk.END, f"{item['nome']} - Qtd: {item['quantidade']} - R${item['preco']}\n")   
+    response = requests.get(f"{API_URL}/listar")
+    ingredientes = response.json()
+    
+    listar.delete(*listar.get_children())  # limpa a tabela
+    for item in ingredientes: #mostra os igrendientes que foram salvos todos
+        listar.insert("", tk.END, values=(item["id"], item["nome"], item["quantidade"], item["preco"]))
+      
 #########################
 
 
 def deletar_pizza():
-    nome = entrada_nome.get()
-    if nome == "":
-        messagebox.showwarning("Aviso!", "Preencha o campo Nome para deletar")
-    else:
-        requests.delete(f"{API_URL}/delete", json={"nome": nome})
-        messagebox.showinfo("Sucesso!", f"{nome} deletado!")
-        buscar_pizza()
+    selecionado = listar.selection()
+    if not selecionado:
+        messagebox.showwarning("Aviso!", "Selecione um item na lista para deletar")
+        return
+    
+    item = listar.item(selecionado)
+    id_item = item["values"][0]
+    
+    requests.delete(f"{API_URL}/delete", json={"id": id_item})
+    messagebox.showinfo("Sucesso!", "Item deletado!")
+    buscar_pizza()
 
 def pedir_pizza():
-    pizza = entrada_pizza.get()
+    selecionado = listar.selection()
+    if not selecionado:
+        messagebox.showwarning("Aviso!", "Selecione um item na lista para pedir")
+        return
+    
+    if entrada_quantidade_pedido.get() == "":
+        messagebox.showwarning("Aviso!", "Digite a quantidade da retirada")
+        return
+    
+    item = listar.item(selecionado)
+    id_item = item["values"][0]
     quantidade = int(entrada_quantidade_pedido.get())
-    if pizza == "":
-        messagebox.showwarning("Aviso!", "Preencha o campo Pizza")
+    
+    response = requests.post(f"{API_URL}/pedir", json={"id": id_item, "quantidade": quantidade})
+    if response.status_code == 200:
+        messagebox.showinfo("Sucesso!", "Pedido realizado!")
+        buscar_pizza()
     else:
-        response = requests.post(f"{API_URL}/pedir", json={"nome": pizza, "quantidade": quantidade})
-        if response.status_code == 200:
-            messagebox.showinfo("Sucesso!", f"Pedido realizado!")
-            buscar_pizza()
-        else:
-            messagebox.showwarning("Aviso!", "Pizza não encontrada ou sem estoque!")
+        messagebox.showwarning("Aviso!", "Sem estoque suficiente!")
 
 
 
@@ -70,8 +87,18 @@ entrada_preco.pack(pady=5)
 
 ttk.Button(janela, text="Cadastrar Pizza", command=cadastrar_pizza).pack(pady=5)
 
-listar = tk.Text(janela, height=15, width=50)
-listar.pack(padx=5)
+listar = ttk.Treeview(janela, columns=("id", "nome", "qtd", "preco"), show="headings")
+listar.heading("id", text="ID")
+listar.heading("nome", text="Nome")
+listar.heading("qtd", text="Quantidade")
+listar.heading("preco", text="Preço")
+
+listar.column("id", width=40)
+listar.column("nome", width=200)
+listar.column("qtd", width=80)
+listar.column("preco", width=80)
+
+listar.pack(pady=5)
 
 
 frame_botoes = tk.Frame(janela)
@@ -82,10 +109,6 @@ botao_buscar.grid(row=0, column=0, padx=5)
 
 botao_deletar = ttk.Button(frame_botoes, text="Deletar", command=deletar_pizza)
 botao_deletar.grid(row=0, column=1, padx=5)
-
-ttk.Label(janela, text="Digite Sua Pizza:").pack(pady=5)
-entrada_pizza = ttk.Entry(janela, width=30)
-entrada_pizza.pack(pady=5)
 
 ttk.Label(janela, text="Quantidade:").pack(pady=5)
 entrada_quantidade_pedido = ttk.Entry(janela, width=30)

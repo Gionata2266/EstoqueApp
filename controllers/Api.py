@@ -1,61 +1,67 @@
-from flask import Flask, jsonify, request
+from flask import Blueprint, jsonify, request
+from models.estoque import Estoque
+from database.conexao import get_conexao
 
-#obs talvez as paginas sejam mudadas ainda não sei onde ira ficar a api
-app = Flask(__name__)
-estoque=[
-    {
-    "nome":"Pizza De Mussarela",
-    "quantidade":10,
-    "preco":80
-    },
-    {
-    "nome":"Pizza De Calabresa",
-    "quantidade":10,
-    "preco":80
-    }
-    ]
+estoque_bp = Blueprint("estoque", __name__)
 
-@app.route("/")
+@estoque_bp.route("/")
 def inicio():
     return "Hello World!"
 
-@app.route("/listar", methods=["GET"])
+@estoque_bp.route("/listar", methods=["GET"])
 def lista():
-    return jsonify(estoque)
+    conn = get_conexao()
+    estoque = Estoque(conn)
+    resultado = estoque.listar_itens()
+    conn.close()
+    return jsonify(resultado)
 
-@app.route("/add", methods=["POST"])
+@estoque_bp.route("/add", methods=["POST"])
 def adicionar():
+    conn = get_conexao()
+    estoque = Estoque(conn)
     dados = request.get_json()
-    estoque.append({
-        "nome": dados["nome"],
-        "quantidade": dados["quantidade"],
-        "preco": dados["preco"]
-    })
+    estoque.inserir_item(
+        dados["nome"], 
+        dados["quantidade"],
+        dados["preco"]
+    )
+    conn.close()
     return jsonify(estoque)
 
-@app.route("/delete", methods=["DELETE"])
+@estoque_bp.route("/delete", methods=["DELETE"])
 def deletar():
     dados = request.get_json()
-    nome = dados["nome"]
-    for item in estoque:
-        if item["nome"] == nome:
-            estoque.remove(item)
-            return jsonify({"mensagem": f"{nome} removido!"})
-    return jsonify({"mensagem": "Ingrediente não encontrado"}), 404
+    conn = get_conexao()
+    estoque = Estoque(conn)
+    item = estoque.buscar_por_id(dados["id"])
+    
+    if not item:
+        conn.close()
+        return jsonify({"mensagem": "Item não encontrado"}), 404
+    
+    estoque.deletar_item(dados["id"])
+    conn.close()
+    return jsonify({"mensagem": "Item removido!"})
 
-@app.route("/pedir", methods=["POST"])
+@estoque_bp.route("/pedir", methods=["POST"])
 def pedir():
     dados = request.get_json()
-    nome = dados["nome"]
-    quantidade_pedida = dados["quantidade"]  # ← pega a quantidade
-    for item in estoque:
-        if item["nome"] == nome:
-            if item["quantidade"] >= quantidade_pedida:
-                item["quantidade"] -= quantidade_pedida  # ← diminui a quantidade certa
-                return jsonify({"mensagem": f"Pedido de {nome} realizado!"})
-            else:
-                return jsonify({"mensagem": "Sem estoque suficiente!"}), 400
-    return jsonify({"mensagem": "Pizza não encontrada"}), 404
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    conn = get_conexao()
+    estoque = Estoque(conn)
+    
+    item = estoque.buscar_por_id(dados["id"])
+    
+    if not item:
+        conn.close()
+        return jsonify({"mensagem": "Item não encontrado"}), 404
+    
+    if item["quantidade"] < dados["quantidade"]:
+        conn.close()
+        return jsonify({"mensagem": "Sem estoque suficiente!"}), 400
+    
+    nova_quantidade = item["quantidade"] - dados["quantidade"]
+    estoque.atualizar_quantidade(dados["id"], nova_quantidade)
+    conn.close()
+    return jsonify({"mensagem": "Pedido realizado!"})
+    

@@ -67,46 +67,47 @@ def pedir_pizza():
     else:
         messagebox.showwarning("Aviso!", "Sem estoque suficiente!")
 
-def editar_pizza(event):
-    selecionado = listar.selection()
-    if not selecionado:
+def editar_pizza(event): #chamado o evento de 2 click chega aki
+    selecionado = listar.selection() #pega o item que foi selecionado na tabela
+    if not selecionado: #se não tiver item selecionado sai da função
         return
     
-    item = listar.item(selecionado)
+    item = listar.item(selecionado) # se tiver selecionado começa
     id_item = item["values"][0]
     nome_atual = item["values"][1]
     qtd_atual = item["values"][2]
     preco_atual = item["values"][3]
     
     # janela de edição
-    janela_edit = tk.Toplevel(janela)
+    janela_edit = tk.Toplevel(janela) #cria nova janela
     janela_edit.title("Editar Item")
     janela_edit.geometry("300x250")
     
-    ttk.Label(janela_edit, text="Nome:").pack(pady=5)
-    entrada_edit_nome = ttk.Entry(janela_edit, width=30)
+    ttk.Label(janela_edit, text="Nome:").pack(pady=5)  
+    entrada_edit_nome = ttk.Entry(janela_edit, width=30)   #cpega novo nome
     entrada_edit_nome.insert(0, nome_atual)
     entrada_edit_nome.pack(pady=5)
     
-    ttk.Label(janela_edit, text="Quantidade:").pack()
+    ttk.Label(janela_edit, text="Quantidade:").pack()      #pega nova quantidade
     entrada_edit_qtd = ttk.Entry(janela_edit, width=30)
     entrada_edit_qtd.insert(0, qtd_atual)
     entrada_edit_qtd.pack(pady=5)
     
-    ttk.Label(janela_edit, text="Preço:").pack()
+    ttk.Label(janela_edit, text="Preço:").pack()     #pega novo valor
     entrada_edit_preco = ttk.Entry(janela_edit, width=30)
     entrada_edit_preco.insert(0, preco_atual)
     entrada_edit_preco.pack(pady=5)
     
-    def salvar_edicao():
-        dados = {
+    def salvar_edicao():                   #depois que clicar em salvar vai enviar 
+        dados = {                           #informção para api e salvar o dados novos
             "id": id_item,
             "nome": entrada_edit_nome.get(),
             "quantidade": int(entrada_edit_qtd.get()),
             "preco": float(entrada_edit_preco.get())
         }
-        requests.put(f"{API_URL}/editar", json=dados)
-        janela_edit.destroy()
+        requests.put(f"{API_URL}/editar", json=dados) #envia os dados 
+        
+        janela_edit.destroy() #fecha nova janela
         buscar_pizza()
     
     ttk.Button(janela_edit, text="Salvar", command=salvar_edicao).pack(pady=10)
@@ -142,7 +143,7 @@ listar.column("qtd", width=80)
 listar.column("preco", width=80)
 
 listar.pack(pady=5)
-listar.bind("<Double-1>", editar_pizza)
+listar.bind("<Double-1>", editar_pizza) #quando da 2 click
 
 
 frame_botoes = tk.Frame(janela)

@@ -65,3 +65,11 @@ def pedir():
     conn.close()
     return jsonify({"mensagem": "Pedido realizado!"})
     
+@estoque_bp.route("/editar", methods=["PUT"])
+def editar():
+    dados = request.get_json()
+    conn = get_conexao()
+    estoque = Estoque(conn)
+    estoque.atualizar_item(dados["id"], dados["nome"], dados["quantidade"], dados["preco"])
+    conn.close()
+    return jsonify({"mensagem": "Item atualizado!"})

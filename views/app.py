@@ -16,7 +16,7 @@ def cadastrar_pizza():
             "preco": float(entrada_preco.get())
         }
         requests.post(f"{API_URL}/add", json=dados)
-        messagebox.showinfo("Sucesso!", "Ingrediente cadastrado!")
+        messagebox.showinfo("Sucesso!", "Pizza cadastrada!")
         buscar_pizza()   
 
 def buscar_pizza():
@@ -67,6 +67,49 @@ def pedir_pizza():
     else:
         messagebox.showwarning("Aviso!", "Sem estoque suficiente!")
 
+def editar_pizza(event):
+    selecionado = listar.selection()
+    if not selecionado:
+        return
+    
+    item = listar.item(selecionado)
+    id_item = item["values"][0]
+    nome_atual = item["values"][1]
+    qtd_atual = item["values"][2]
+    preco_atual = item["values"][3]
+    
+    # janela de edição
+    janela_edit = tk.Toplevel(janela)
+    janela_edit.title("Editar Item")
+    janela_edit.geometry("300x250")
+    
+    ttk.Label(janela_edit, text="Nome:").pack(pady=5)
+    entrada_edit_nome = ttk.Entry(janela_edit, width=30)
+    entrada_edit_nome.insert(0, nome_atual)
+    entrada_edit_nome.pack(pady=5)
+    
+    ttk.Label(janela_edit, text="Quantidade:").pack()
+    entrada_edit_qtd = ttk.Entry(janela_edit, width=30)
+    entrada_edit_qtd.insert(0, qtd_atual)
+    entrada_edit_qtd.pack(pady=5)
+    
+    ttk.Label(janela_edit, text="Preço:").pack()
+    entrada_edit_preco = ttk.Entry(janela_edit, width=30)
+    entrada_edit_preco.insert(0, preco_atual)
+    entrada_edit_preco.pack(pady=5)
+    
+    def salvar_edicao():
+        dados = {
+            "id": id_item,
+            "nome": entrada_edit_nome.get(),
+            "quantidade": int(entrada_edit_qtd.get()),
+            "preco": float(entrada_edit_preco.get())
+        }
+        requests.put(f"{API_URL}/editar", json=dados)
+        janela_edit.destroy()
+        buscar_pizza()
+    
+    ttk.Button(janela_edit, text="Salvar", command=salvar_edicao).pack(pady=10)
 
 
 janela = tk.Tk()
@@ -99,6 +142,7 @@ listar.column("qtd", width=80)
 listar.column("preco", width=80)
 
 listar.pack(pady=5)
+listar.bind("<Double-1>", editar_pizza)
 
 
 frame_botoes = tk.Frame(janela)
@@ -116,5 +160,6 @@ entrada_quantidade_pedido.pack(pady=5)
 
 botao_pedido = ttk.Button(janela, text="Pedir", command=pedir_pizza)
 botao_pedido.pack(pady=5)
+
 
 janela.mainloop()

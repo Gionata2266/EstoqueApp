@@ -15,10 +15,18 @@ class Estoque:
         self.conexao.commit()
 
     def inserir_item(self, nome, quantidade, preco):
-        self.cursor.execute("""
-            INSERT INTO estoque(nome, quantidade, preco) 
-            VALUES(?,?,?)
-        """, (nome, quantidade, preco))
+        self.cursor.execute("SELECT id, quantidade FROM estoque WHERE nome = ?", (nome,)) #procura pelo nome
+        existente = self.cursor.fetchone() #pega os dados da busca se o dado nome existir
+        
+        if existente: #se o dado nome existir
+            nova_quantidade = existente["quantidade"] + quantidade #ele vai pegar quantidade nova e vai colocar na que ja tem 
+            self.cursor.execute("UPDATE estoque SET quantidade = ? WHERE id = ?", (nova_quantidade, existente["id"])) #atualiza o banco 
+        else:#se não encontrou nenhum item ele vai adicionar normal como padrão
+            self.cursor.execute("""
+                INSERT INTO estoque(nome, quantidade, preco) 
+                VALUES(?,?,?)
+            """, (nome, quantidade, preco))
+        
         self.conexao.commit()
 
     def listar_itens(self):
@@ -48,4 +56,8 @@ class Estoque:
             "UPDATE estoque SET quantidade = ? WHERE id = ?",
             (nova_quantidade, id)
         )
+        
+        
+        
+        
         self.conexao.commit()

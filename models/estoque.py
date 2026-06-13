@@ -1,45 +1,63 @@
-from database.conexao import conexao, cursor 
-
 class Estoque:
     def __init__(self, conexao):
         self.conexao = conexao
         self.cursor = conexao.cursor()
-        self._criar_tabela() 
 
     def _criar_tabela(self):
         self.cursor.execute(""" 
         CREATE TABLE IF NOT EXISTS estoque (
             id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-            nome TEXT NOT NULL,
-            categoria TEXT NOT NULL,
-            marca TEXT NOT NULL,
-            unidade_medida TEXT NOT NULL,
+            nome TEXT NOT NULL UNIQUE,
             quantidade INTEGER NOT NULL,
-            preco REAL NOT NULL,
-            data_validade DATE NOT NULL
+            preco REAL NOT NULL
             )
         """)
         self.conexao.commit()
 
-    def inserir_item(nome, categoria, marca, unidade_medida, quantidade, preco, data_validade):
-        cursor.execute("""
-            INSERT INTO estoque(nome, categoria, marca, unidade_medida, quantidade, preco, data_validade) 
-            VALUES(?,?,?,?,?,?,?)
-        """, (nome, categoria, marca, unidade_medida, quantidade, preco, data_validade))
-        conexao.commit()
+    def inserir_item(self, nome, quantidade, preco):
+        self.cursor.execute("SELECT id, quantidade FROM estoque WHERE nome = ?", (nome,)) #procura pelo nome
+        existente = self.cursor.fetchone() #pega os dados da busca se o dado nome existir
+        
+        if existente: #se o dado nome existir
+            nova_quantidade = existente["quantidade"] + quantidade #ele vai pegar quantidade nova e vai colocar na que ja tem 
+            self.cursor.execute("UPDATE estoque SET quantidade = ? WHERE id = ?", (nova_quantidade, existente["id"])) #atualiza o banco 
+        else:#se não encontrou nenhum item ele vai adicionar normal como padrão
+            self.cursor.execute("""
+                INSERT INTO estoque(nome, quantidade, preco) 
+                VALUES(?,?,?)
+            """, (nome, quantidade, preco))
+        
+        self.conexao.commit()
 
-    def listar_itens():
-        cursor.execute("SELECT id, nome, categoria, marca, unidade_medida, quantidade, preco, data_validade FROM estoque")
-        return cursor.fetchall()
+    def listar_itens(self):
+        self.cursor.execute("SELECT id, nome, quantidade, preco FROM estoque")
+        rows = self.cursor.fetchall()
+        return [dict(row) for row in rows]
 
-    def atualizar_item(id, nome, categoria, marca, unidade_medida, quantidade, preco, data_validade):
-        cursor.execute("""
+    def atualizar_item(self, id, nome, quantidade, preco):
+        self.cursor.execute("""
             UPDATE estoque SET
-            nome = ?, categoria = ?, marca = ?, unidade_medida = ?, quantidade = ?, preco = ?, data_validade = ? 
+            nome = ?, quantidade = ?, preco = ?
             WHERE id = ?
-        """, (nome, categoria, marca, unidade_medida, quantidade, preco, data_validade, id))
-        conexao.commit()
+        """, (nome, quantidade, preco, id))
+        self.conexao.commit()
 
-    def deletar_item(id):
-        cursor.execute("DELETE FROM estoque WHERE id = ?", (id,))
-        conexao.commit()
+    def deletar_item(self, id):
+        self.cursor.execute("DELETE FROM estoque WHERE id = ?", (id,))
+        self.conexao.commit()
+        
+    def buscar_por_id(self, id):
+        self.cursor.execute("SELECT * FROM estoque WHERE id = ?", (id,))
+        row = self.cursor.fetchone()
+        return dict(row) if row else None
+    
+    def atualizar_quantidade(self, id, nova_quantidade):
+        self.cursor.execute(
+            "UPDATE estoque SET quantidade = ? WHERE id = ?",
+            (nova_quantidade, id)
+        )
+        
+        
+        
+        
+        self.conexao.commit()
